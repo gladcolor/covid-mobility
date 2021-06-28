@@ -1,4 +1,4 @@
-name: base
+name: safegraph_env_v3
 channels:
   - conda-forge
   - defaults
@@ -118,7 +118,7 @@ dependencies:
   - libpng=1.6.37=hed695b0_0
   - libpq=11.4=h4e4e079_0
   - libsodium=1.0.16=h1bed415_0
-  - libspatialindex=1.9.1=he1b5a44_0
+  #- libspatialindex=1.9.1=he1b5a44_0
   - libspatialite=4.3.0a=hb5ec416_1026
   - libssh2=1.8.2=h22169c7_2
   - libstdcxx-ng=9.1.0=hdf63c60_0
@@ -406,5 +406,5 @@ dependencies:
     - python-louvain==0.14
     - reverse-geocoder==1.5.1
     - tilemapbase==0.4.5
-prefix: /dfs/scratch1/safegraph_homes/safegraph_env_v3/safegraph_env_v3
+prefix: ./safegraph_env_v3
 

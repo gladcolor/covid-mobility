@@ -43,11 +43,13 @@ import random
 from dask.diagnostics import ProgressBar
 import dask.dataframe as dd
 
+import glob
+
 # in old base dir (scratch1)
-BASE_DIR = '/dfs/scratch1/safegraph_homes/'
-UNZIPPED_DATA_DIR = os.path.join(BASE_DIR, 'all_aggregate_data/20191213-safegraph-aggregate-longitudinal-data-to-unzip-to/')
+BASE_DIR = '/media/huan/easystore/'  # all data can be put here. Huan
+UNZIPPED_DATA_DIR = os.path.join(BASE_DIR, 'covid_mobility_results/all_aggregate_data/20191213-safegraph-aggregate-longitudinal-data-to-unzip-to/')
 PATH_TO_OVERALL_HOME_PANEL_SUMMARY = os.path.join(UNZIPPED_DATA_DIR, 'SearchofAllRecords-CORE_POI-GEOMETRY-PATTERNS-2020_02-2020-03-16/visit_panel_summary.csv')
-ANNOTATED_H5_DATA_DIR = os.path.join(BASE_DIR, 'all_aggregate_data/chunks_with_demographic_annotations/')
+ANNOTATED_H5_DATA_DIR = os.path.join(BASE_DIR, 'covid_mobility_results/all_aggregate_data/chunks_with_demographic_annotations/')
 CHUNK_FILENAME = 'chunk_1.2017-3.2020_c2.h5'
 STRATIFIED_BY_AREA_DIR = os.path.join(BASE_DIR, 'all_aggregate_data/chunks_with_demographic_annotations_stratified_by_area/')
 PATH_TO_SAFEGRAPH_AREAS = os.path.join(BASE_DIR, 'all_aggregate_data/safegraph_poi_area_calculations/SafeGraphPlacesGeoSupplementSquareFeet.csv.gz')
@@ -59,7 +61,7 @@ PATH_TO_WEEKLY_PATTERNS = os.path.join(BASE_DIR, 'all_aggregate_data/weekly_patt
 PATH_TO_HOME_PANEL_SUMMARY = os.path.join(BASE_DIR, 'all_aggregate_data/weekly_patterns_data/v1/home_summary_file/')
 
 # in new base dir (scratch2)
-NEW_BASE_DIR = '/dfs/scratch2/second_safegraph_homes/'
+NEW_BASE_DIR = '/media/huan/easystore/Safegraph/Weekly Places Patterns v2 (until 2020-06-15)/'
 FITTED_MODEL_DIR = os.path.join(NEW_BASE_DIR, 'extra_safegraph_aggregate_models/')
 CURRENT_DATA_DIR = os.path.join(NEW_BASE_DIR, 'all_aggregate_data/20201028_download/')  # most recent data download
 
@@ -67,7 +69,7 @@ CURRENT_DATA_DIR = os.path.join(NEW_BASE_DIR, 'all_aggregate_data/20201028_downl
 PATH_TO_ACS_1YR_DATA = os.path.join(BASE_DIR, 'external_datasets_for_aggregate_analysis/2018_one_year_acs_population_data/nhgis0001_ds239_20185_2018_blck_grp.csv')
 PATH_TO_ACS_5YR_DATA = os.path.join(BASE_DIR, 'external_datasets_for_aggregate_analysis/2017_five_year_acs_data/2017_five_year_acs_data.csv')
 PATH_TO_CENSUS_BLOCK_GROUP_DATA = os.path.join(BASE_DIR, 'base_dir_for_all_new_data_and_results/non_safegraph_datasets/census_block_group_data/ACS_5_year_2013_to_2017_joined_to_blockgroup_shapefiles/') # census block group boundaries.
-PATH_FOR_CBG_MAPPER = os.path.join(BASE_DIR, 'old_dfs_scratch0_directory_contents/new_census_data/')
+PATH_FOR_CBG_MAPPER = os.path.join(BASE_DIR, 'covid_mobility_results/new_census_data/')
 PATH_FOR_CBG_MAPPER_BY_STATE = os.path.join(BASE_DIR, 'external_datasets_for_aggregate_analysis/census_block_group_shapefiles_by_state/')
 PATH_TO_MSA_SHAPEFILES = os.path.join(BASE_DIR, 'external_datasets_for_aggregate_analysis/msa_shapefiles/tl_2017_us_cbsa/')
 PATH_TO_COUNTY_TO_MSA_MAPPING = os.path.join(BASE_DIR, 'base_dir_for_all_new_data_and_results/non_safegraph_datasets/census_block_group_data/august_2017_county_to_metropolitan_mapping.csv') # maps counties to MSAs, consistent with the Experienced Segregation paper. Data was downloaded from https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2017/delineation-files/list1.xls.
@@ -88,7 +90,8 @@ WGS_84_CRS = {'init' :'epsg:4326'}
 
 # helper variables useful for experiments
 # automatically read weekly strings so we don't have to remember to update it each week.
-ALL_WEEKLY_STRINGS = sorted([a.replace('-weekly-patterns.csv.gz', '') for a in os.listdir('/dfs/scratch1/safegraph_homes/all_aggregate_data/weekly_patterns_data/v1/main-file/')])
+# ALL_WEEKLY_STRINGS = sorted([a.replace('-weekly-patterns.csv.gz', '') for a in os.listdir('/media/huan/easystore/Safegraph/Weekly Places Patterns v2 (until 2020-06-15)/main-file')])
+ALL_WEEKLY_STRINGS = sorted([os.path.basename(a).replace('-weekly-patterns.csv.gz', '') for a in glob.glob('/media/huan/easystore/Safegraph/Weekly Places Patterns v2 (until 2020-06-15)/main-file/*.gz')])  # Huan
 MIN_DATETIME = datetime.datetime(2020, 3, 1, 0)
 MAX_DATETIME = datetime.datetime(2020, 5, 2, 23)
 # 10 MSAs with most POIs in SafeGraph data

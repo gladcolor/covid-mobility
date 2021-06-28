@@ -374,14 +374,14 @@ def load_weekly_patterns_v2_data(week_string, cols_to_keep, expand_hourly_visits
             cols_to_load.append(k)
     
     if week_string <= '2020-06-15':
-        path_to_csv = os.path.join(CURRENT_DATA_DIR, 'weekly_20190101_20200615/main-file/%s-weekly-patterns.csv.gz' % week_string)
+        path_to_csv = os.path.join(CURRENT_DATA_DIR, '/media/huan/easystore/Safegraph/Weekly Places Patterns v2 (until 2020-06-15)/main-file/%s-weekly-patterns.csv.gz' % week_string)
         assert os.path.isfile(path_to_csv)
         print('Loading from %s' % path_to_csv)
         df = load_csv_possibly_with_dask(path_to_csv, use_dask=True, usecols=cols_to_load, dtype={'poi_cbg':'float64'})
         start_day_string = week_string
         start_datetime = week_datetime
     else:
-        path_to_weekly_dir = os.path.join(CURRENT_DATA_DIR, 'weekly_20200615_20201028/patterns/%s/' % week_datetime.strftime('%Y/%m/%d'))
+        path_to_weekly_dir = os.path.join(CURRENT_DATA_DIR, '/media/huan/easystore/Safegraph/Weekly Places Patterns v2 (until 2020-06-15)/patterns/%s/' % week_datetime.strftime('%Y/%m/%d'))
         inner_folder = os.listdir(path_to_weekly_dir)
         assert len(inner_folder) == 1  # there is always a single folder inside the weekly folder 
         path_to_patterns_parts = os.path.join(path_to_weekly_dir, inner_folder[0])
@@ -940,7 +940,8 @@ class CensusBlockGroups:
             # https://www.reddit.com/r/gis/comments/775imb/accessing_a_gdb_without_esri_arcgis/doj9zza
             full_path = os.path.join(self.base_directory, file)
             layer_list = fiona.listlayers(full_path)
-            print(file)
+
+            print(f'file in self.gdb_files: {file}')
             print(layer_list)
             geographic_layer_name = [a for a in layer_list if a[:15] == 'ACS_2017_5YR_BG']
             assert len(geographic_layer_name) == 1
@@ -948,7 +949,7 @@ class CensusBlockGroups:
 
             geographic_data = geopandas.read_file(full_path, layer=geographic_layer_name).to_crs(self.crs_to_use)
             # by default when you use the read file command, the column containing spatial objects is named "geometry", and will be set as the active column.
-            print(geographic_data.columns)
+            print('geographic_data.columns:', geographic_data.columns)
             geographic_data = geographic_data.sort_values(by='GEOID_Data')[['GEOID_Data', 'geometry', 'STATEFP', 'COUNTYFP', 'TRACTCE']]
             for demographic_idx, demographic_layer_name in enumerate(demographic_layer_names):
                 assert demographic_layer_name in layer_list
@@ -1148,3 +1149,11 @@ class CensusBlockGroups:
 
         print("Total query time is %2.3f" % (time.time() - t0))
         return results
+
+def read_gdb(gdb_file):
+    layers = fiona.open(gdb_file)
+    print(len(layers))
+
+#read_gdb(gdb_file=r'/media/huan/easystore/covid_mobility_results/new_census_data/ACS_2017_5YR_BG.gdb')
+
+write_out_acs_5_year_data()
