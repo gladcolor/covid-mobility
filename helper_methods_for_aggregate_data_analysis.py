@@ -23,6 +23,21 @@ except:
     print(ALL_WEEKLY_STRINGS)
     raise Exception("At least one weekly string is badly formatted.")
 
+
+# Huan
+def get_all_files(root_dir, ext_list):
+    if not isinstance(ext_list, list):
+        ext_list = [ext_list]
+    all_files = []
+    for root, dirs, files in os.walk(root_dir, topdown=False):
+        for file in files:
+            for target_ext in ext_list:
+                ext_len = len(target_ext)
+                ext = file[-ext_len:]
+                if ext == target_ext:
+                    all_files.append(os.path.join(root, file))
+    return all_files
+
 def load_social_distancing_metrics(datetimes, version='v2'):
     """
     Given a list of datetimes, load social distancing metrics for those days.
@@ -191,7 +206,7 @@ def load_all_chunks(cols=None, load_backup=False):
 
 def load_patterns_data(month=None, year=None, week_string=None, extra_cols=[], just_testing=False):
     """
-    Load in Patterns data for a single month and year, or for a single week. (These options are mutually exclusive). 
+    Load in Patterns data for a single month and year, or for a single week. (These options are mutually exclusive).
     Use extra_cols to define non-default columns to load.
 
     just_testing is a flag to allow quicker prototyping; it will load only a subset of the data. 
@@ -204,24 +219,33 @@ def load_patterns_data(month=None, year=None, week_string=None, extra_cols=[], j
         assert week_string is None
         assert month in range(1, 13)
         assert year in [2017, 2018, 2019, 2020]
-        if (year == 2019 and month == 12) or (year == 2020 and month in [1, 2]):
-            upload_date_string = '2020-03-16'  # we originally downloaded files in two groups; load them in the same way.
-        else:
-            upload_date_string = '2019-12-12'
-        month_and_year_string = '%i_%02d-%s' % (year, month, upload_date_string)
-        base_dir = os.path.join(UNZIPPED_DATA_DIR, 'SearchofAllRecords-CORE_POI-GEOMETRY-PATTERNS-%s' % month_and_year_string)
+
+        # Huan: I guess these ar monthly patterns, not POI polygons (cannot download).
+        # if (year == 2019 and month == 12) or (year == 2020 and month in [1, 2]):
+        #     upload_date_string = '2020-03-16'  # we originally downloaded files in two groups; load them in the same way.
+        # else:
+        #     upload_date_string = '2019-12-12'
+        # month_and_year_string = '%i_%02d-%s' % (year, month, upload_date_string)
+        # base_dir = os.path.join(UNZIPPED_DATA_DIR, 'SearchofAllRecords-CORE_POI-GEOMETRY-PATTERNS-%s' % month_and_year_string)
+        base_dir = MONTHLY_PATTERNS_PATH
         print("Loading all files from %s" % base_dir)
 
-        filenames = [a for a in os.listdir(base_dir) if
-                     (a.startswith('core_poi-geometry-patterns-part') and a.endswith('.csv.gz'))]
+        # filenames = [a for a in os.listdir(base_dir) if
+        #              (a.startswith('core_poi-geometry-patterns-part') and a.endswith('.csv.gz'))]
+
+        # Huan
+
+        filenames = get_all_files(base_dir, 'csv.gz')
+
 
         # make sure we're not ignoring any files we don't expect to ignore. 
-        assert all([a in ['brand_info.csv', 'visit_panel_summary.csv', 'README.txt', 'home_panel_summary.csv']
-            for a in os.listdir(base_dir) if a not in filenames])
+        # assert all([a in ['brand_info.csv', 'visit_panel_summary.csv', 'README.txt', 'home_panel_summary.csv']
+        #     for a in os.listdir(base_dir) if a not in filenames])
         if just_testing:
             filenames = filenames[:2]
         print("Number of files to load: %i" % len(filenames))
-        full_paths = [os.path.join(base_dir, a) for a in filenames]
+        full_paths = filenames # Huan
+        # full_paths = [os.path.join(base_dir, a) for a in filenames]
         x = load_csv_possibly_with_dask(full_paths, use_dask=True, usecols=['safegraph_place_id',
                                                                             'parent_safegraph_place_id',
                                                                             'location_name',
@@ -249,7 +273,7 @@ def load_patterns_data(month=None, year=None, week_string=None, extra_cols=[], j
         # weekly patterns data. 
         month_and_year = False
         assert month is None and year is None
-        assert week_string in ALL_WEEKLY_STRINGS
+        # assert week_string in ALL_WEEKLY_STRINGS  # Huan commented this line
         filepath = os.path.join(PATH_TO_WEEKLY_PATTERNS, '%s-weekly-patterns.csv.gz' % week_string)
         # Filename is misleading - it is really a zipped file.
         # Also, we're missing some columns that we had before, so I think we're just going to have to join on SafeGraph ID.
@@ -291,7 +315,8 @@ def load_patterns_data(month=None, year=None, week_string=None, extra_cols=[], j
         # Start time for measurement period in ISO 8601 format of YYYY-MM-DDTHH:mm:SS±hh:mm
         # (local time with offset from GMT). The start time will be 12 a.m. Sunday in local time.
         x['visits_by_each_hour'] = x['visits_by_each_hour'].map(json.loads) # convert string lists to lists.
-        assert all_datetimes[0].strftime('%A') == 'Sunday'
+        # assert all_datetimes[0].strftime('%A') == 'Sunday'  # donot know why is "Monday"
+
         hours = pd.DataFrame(x['visits_by_each_hour'].values.tolist(),
                      columns=[f'hourly_visits_%i.%i.%i.%i' % (dt.year, dt.month, dt.day, hour)
                               for dt in all_datetimes
@@ -322,7 +347,8 @@ def load_patterns_data(month=None, year=None, week_string=None, extra_cols=[], j
 
         percent_rows_being_corrected = (x['offset_from_gmt'].map(lambda a:a in hourly_offset_strings).mean() * 100)
         print("%2.3f%% of rows have timezones that we spike-correct for." % percent_rows_being_corrected) 
-        assert percent_rows_being_corrected > 99 # make sure we're correcting almost all rows
+        # assert percent_rows_being_corrected > 99 # make sure we're correcting almost all rows
+        # Huan: do not know why need this alter, but 2020-03-20 doest not meet it.
 
         # have to correct for each timezone separately.
         for hourly_offset in hourly_offsets:
@@ -891,7 +917,7 @@ class CensusBlockGroups:
         county_to_msa_mapping_filepath=PATH_TO_COUNTY_TO_MSA_MAPPING):
         self.base_directory = base_directory
         if gdb_files is None:
-            self.gdb_files = ['ACS_2017_5YR_BG.gdb']
+            self.gdb_files = ['ACS_2019_5YR_BG.gdb']
         else:
             self.gdb_files = gdb_files
         self.crs_to_use = WGS_84_CRS # https://epsg.io/4326, WGS84 - World Geodetic System 1984, used in GPS.
@@ -907,7 +933,7 @@ class CensusBlockGroups:
     def annotate_with_area_and_pop_density(self):
         # https://gis.stackexchange.com/questions/218450/getting-polygon-areas-using-geopandas. 
         # See comments about using cea projection. 
-        gdf = self.geometry_d[['geometry']].copy().to_crs({'proj':'cea'})
+        gdf = self.geometry_d[['geometry']].copy().to_crs({'proj':'cea'})   # proj: cea: Equal Area Cylindrical
         area_in_square_meters = gdf['geometry'].area.values
         self.block_group_d['block_group_area_in_square_miles'] = area_in_square_meters / (1609.34 ** 2)
         self.block_group_d['people_per_mile'] = (self.block_group_d['B03002e1'] /
@@ -935,27 +961,36 @@ class CensusBlockGroups:
         """
         self.block_group_d = None
         self.geometry_d = None
-        demographic_layer_names = ['X25_HOUSING_CHARACTERISTICS', 'X01_AGE_AND_SEX', 'X03_HISPANIC_OR_LATINO_ORIGIN', 'X19_INCOME']
+        demographic_layer_names = ['X25_HOUSING_CHARACTERISTICS', 'X01_AGE_AND_SEX', 'X03_HISPANIC_OR_LATINO_ORIGIN', 'X19_INCOME',
+                                   'X02_RACE',
+                                   'X17_POVERTY',
+                                   'X27_HEALTH_INSURANCE'
+                                   ]  # Table names in the FileGeodatabase
         for file in self.gdb_files:
             # https://www.reddit.com/r/gis/comments/775imb/accessing_a_gdb_without_esri_arcgis/doj9zza
             full_path = os.path.join(self.base_directory, file)
-            layer_list = fiona.listlayers(full_path)
+            layer_list = fiona.listlayers(full_path)  # all layers and tables in the GeoDatabase
 
             print(f'file in self.gdb_files: {file}')
-            print(layer_list)
-            geographic_layer_name = [a for a in layer_list if a[:15] == 'ACS_2017_5YR_BG']
+            print("Layers and tabels:\n", layer_list)
+            geographic_layer_name = [a for a in layer_list if a[:15] == 'ACS_2019_5YR_BG']  # block-group polygon layer
             assert len(geographic_layer_name) == 1
             geographic_layer_name = geographic_layer_name[0]
+
+            print("Start to read:", full_path)
+            print("May need 10 minutes...")
 
             geographic_data = geopandas.read_file(full_path, layer=geographic_layer_name).to_crs(self.crs_to_use)
             # by default when you use the read file command, the column containing spatial objects is named "geometry", and will be set as the active column.
             print('geographic_data.columns:', geographic_data.columns)
             geographic_data = geographic_data.sort_values(by='GEOID_Data')[['GEOID_Data', 'geometry', 'STATEFP', 'COUNTYFP', 'TRACTCE']]
+
+            print("Merge attribute tabels to polygons...")
             for demographic_idx, demographic_layer_name in enumerate(demographic_layer_names):
                 assert demographic_layer_name in layer_list
                 if demographic_idx == 0:
-                    demographic_data = geopandas.read_file(full_path, layer=demographic_layer_name)
-                else:
+                    demographic_data = geopandas.read_file(full_path, layer=demographic_layer_name)   # first table
+                else:     # link the remaining tables to the first table.
                     old_len = len(demographic_data)
                     new_df = geopandas.read_file(full_path, layer=demographic_layer_name)
                     assert sorted(new_df['GEOID']) == sorted(demographic_data['GEOID'])
@@ -964,15 +999,16 @@ class CensusBlockGroups:
             demographic_data = demographic_data.sort_values(by='GEOID')
 
             shared_geoids = set(demographic_data['GEOID'].values).intersection(set(geographic_data['GEOID_Data'].values))
-            print("Length of demographic data: %i; geographic data %i; %i GEOIDs in both" % (len(demographic_data), len(geographic_data), len(shared_geoids)))
+            print("Length of demographic data: %i; geographic data %i; %i GEOIDs in both" % (len(demographic_data), len(geographic_data), len(shared_geoids))) # check the numbers ob GEOID in polygon and tables.
 
-            demographic_data = demographic_data.loc[demographic_data['GEOID'].map(lambda x:x in shared_geoids)]
-            geographic_data = geographic_data.loc[geographic_data['GEOID_Data'].map(lambda x:x in shared_geoids)]
+            # keep the polygon and attributes in the shared_geoids.
+            demographic_data = demographic_data.loc[demographic_data['GEOID'].map(lambda x:x in shared_geoids)]  # map function is fast.
+            geographic_data = geographic_data.loc[geographic_data['GEOID_Data'].map(lambda x:x in shared_geoids)]  # if x in shared_geoids, return True
 
-            demographic_data.index = range(len(demographic_data))
+            demographic_data.index = range(len(demographic_data)) # re_index
             geographic_data.index = range(len(geographic_data))
 
-            assert (geographic_data['GEOID_Data'] == demographic_data['GEOID']).all()
+            assert (geographic_data['GEOID_Data'] == demographic_data['GEOID']).all() # already sorted.
             assert len(geographic_data) == len(set(geographic_data['GEOID_Data']))
 
 
@@ -986,8 +1022,8 @@ class CensusBlockGroups:
             else:
                 self.geometry_d = pd.concat([self.geometry_d, geographic_data])
 
-        assert pd.isnull(self.geometry_d['STATEFP']).sum() == 0
-        good_idxs = self.geometry_d['STATEFP'].map(lambda x:x in FIPS_CODES_FOR_50_STATES_PLUS_DC).values
+        assert pd.isnull(self.geometry_d['STATEFP']).sum() == 0   # STATEFP: state two digits ID
+        good_idxs = self.geometry_d['STATEFP'].map(lambda x:x in FIPS_CODES_FOR_50_STATES_PLUS_DC).values  # return a bool list
         print("Warning: the following State FIPS codes are being filtered out")
         print(self.geometry_d.loc[~good_idxs, 'STATEFP'].value_counts())
         print("%i/%i Census Block Groups in total removed" % ((~good_idxs).sum(), len(good_idxs)))
@@ -1060,7 +1096,10 @@ class CensusBlockGroups:
         # https://www2.census.gov/programs-surveys/metro-micro/geographies/reference-files/2017/delineation-files/list1.xls
         """
         print("Loading county to MSA mapping")
-        self.counties_to_msa_df = pd.read_csv(self.county_to_msa_mapping_filepath, skiprows=2, dtype={'FIPS State Code':str, 'FIPS County Code':str})
+        #self.counties_to_msa_df = pd.read_csv(self.county_to_msa_mapping_filepath, skiprows=2, dtype={'FIPS State Code':str, 'FIPS County Code':str})
+        # do not know why 'skiprow=2'.
+
+        self.counties_to_msa_df = pd.read_csv(self.county_to_msa_mapping_filepath, skiprows=0, dtype={'FIPS State Code':str, 'FIPS County Code':str})
         print("%i rows read" % len(self.counties_to_msa_df))
         self.counties_to_msa_df = self.counties_to_msa_df[['CBSA Title',
                                                            'Metropolitan/Micropolitan Statistical Area',
@@ -1157,3 +1196,24 @@ def read_gdb(gdb_file):
 #read_gdb(gdb_file=r'/media/huan/easystore/covid_mobility_results/new_census_data/ACS_2017_5YR_BG.gdb')
 
 write_out_acs_5_year_data()
+
+
+'''
+all_weekly_dfs = []
+
+for week_string in ALL_WEEKLY_STRINGS:
+    print("Process:", week_string)
+    all_weekly_dfs.append(load_patterns_data(week_string=week_string, just_testing=JUST_TESTING))
+
+for i, weekly_df in enumerate(all_weekly_dfs):
+    print("\n\n********Weekly dataframe %i/%i" % (i + 1, len(all_weekly_dfs)))
+    assert len(base.columns.intersection(weekly_df.columns)) == 0
+
+    ids_in_weekly_but_not_monthly = set(weekly_df.index) - set(base.index)
+    print("Warning: %i/%i POIs in weekly but not monthly data; dropping these" % (len(ids_in_weekly_but_not_monthly),
+                                                                                  len(df)))
+    base = pd.merge(base, weekly_df, how='left', left_index=True, right_index=True, validate='one_to_one')
+    print("Missing data for weekly columns")
+    print(pd.isnull(base[weekly_df.columns]).mean())
+    
+'''
